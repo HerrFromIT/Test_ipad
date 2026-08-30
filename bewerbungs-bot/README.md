@@ -1,4 +1,4 @@
-# Bewerbungs-Bot (Playwright)
+# Bewerbungs-Bot (Playwright + n8n)
 
 Ordner-gesteuerter Bewerbungs-Roboter für **php-entwickler.de** und **get-in-it**.
 
@@ -7,54 +7,68 @@ Ordner-gesteuerter Bewerbungs-Roboter für **php-entwickler.de** und **get-in-it
 | Portal | Was passiert wirklich? | Bot-Aufgabe |
 |--------|------------------------|-------------|
 | **get-in-it** | Kein Bewerbungsformular pro Stelle. Du legst ein Profil an, Firmen melden sich bei dir. | Profil pflegen + Lebenslauf hochladen |
-| **php-entwickler.de** | Die meisten Jobs leiten auf die **Karriereseite des Arbeitgebers** weiter. Nur Partner-Firmen haben Ein-Klick-Bewerbung auf php-entwickler.de. | Job öffnen → erkennen ob Portal oder extern → Formular ausfüllen + absenden |
+| **php-entwickler.de** | Die meisten Jobs leiten auf die **Karriereseite des Arbeitgebers** weiter. Nur Partner-Firmen haben Ein-Klick-Bewerbung auf php-entwickler.de. | Job öffnen → erkennen ob Portal / Formular / mailto → handeln |
+
+## Konkretes Beispiel: VEMA (php-entwickler.de)
+
+Stelle: [Senior Backend Developer - PHP](https://www.php-entwickler.de/job/senior-backend-developer-php-heinersreuth-162463) (VEMA, Heinersreuth)
+
+| Schritt | URL / Aktion |
+|---------|----------------|
+| 1. Job auf php-entwickler.de | `…/job/senior-backend-developer-php-heinersreuth-162463` |
+| 2. „Jetzt bewerben“ | Weiterleitung → `https://karriere.vema-eg.de/jobs/senior-backend-developer-php/` |
+| 3. Karriereseite | **Kein Formular** — nur `mailto:bewerbung@vema-eg.de` |
+| 4. Bot | Domain-Profil `karriere.vema-eg.de` → E-Mail-Entwurf in `result.json` |
+| 5. n8n | Gmail-Draft anlegen → Telegram benachrichtigen |
+
+Beispiel-`meta.json`: `data/applications/_beispiel-vema-senior-backend-php/meta.json`
+
+```bash
+# Felder / mailto einer beliebigen Seite inspecten:
+npm run inspect -- https://karriere.vema-eg.de/jobs/senior-backend-developer-php/
+```
 
 ## Ordnerstruktur
 
 ```
 data/
-  profile.json                    # Deine Stammdaten + Portal-Logins
+  profile.json
   applications/
     firma-senior-php/             # Eine Bewerbung = ein Ordner
-      meta.json                   # URL, Portal, Antworten
+      meta.json
       lebenslauf.pdf
       anschreiben.pdf
-      zeugnisse/
-        abschluss.pdf
-  processing/                     # Bot arbeitet gerade
-  done/                           # Erfolgreich
-  failed/                         # Fehler → manuell prüfen
+  processing/ | done/ | failed/
+n8n/
+  bewerbung-telegram.json         # Import in n8n
+  README.md
 ```
 
-## meta.json Felder
+## meta.json (php-entwickler + externe Seite)
 
 ```json
 {
-  "id": "eindeutige-id",
+  "id": "vema-senior-backend-php",
   "portal": "php_entwickler",
-  "jobUrl": "https://www.php-entwickler.de/jobs/12345",
-  "company": "Firma GmbH",
-  "position": "Senior PHP Developer",
+  "jobUrl": "https://www.php-entwickler.de/job/senior-backend-developer-php-heinersreuth-162463",
+  "applyUrl": "https://karriere.vema-eg.de/jobs/senior-backend-developer-php/",
+  "company": "VEMA Versicherungsmakler Genossenschaft eG",
+  "position": "Senior Backend Developer - PHP",
   "files": {
     "cv": "lebenslauf.pdf",
-    "coverLetter": "anschreiben.pdf",
-    "certificates": ["zeugnisse/abschluss.pdf"]
+    "coverLetter": "anschreiben.pdf"
   },
   "answers": {
-    "motivation": "Fertiger Anschreiben-Text...",
-    "salary": "75.000 EUR",
+    "motivation": "Sehr geehrte Frau Pataki, ...",
+    "salary": "nach Vereinbarung",
     "startDate": "ab sofort"
-  },
-  "formSelectors": {
-    "firstName": "#vorname",
-    "email": "input[name=email]",
-    "cvUpload": "input[type=file]",
-    "submit": "button[type=submit]"
   }
 }
 ```
 
-`formSelectors` ist optional, aber **wichtig für externe Arbeitgeber-Seiten** (Weiterleitung von php-entwickler.de).
+- `applyUrl` gesetzt → Bot geht **direkt** auf die Arbeitgeber-Seite (ohne Portal-Login).
+- Nur `jobUrl` → Bot loggt sich bei php-entwickler.de ein und klickt „Bewerben“.
+- Optional `formSelectors` oder Domain-Profil in `src/lib/domain-profiles.ts`.
 
 ## Setup
 
@@ -70,28 +84,39 @@ export GET_IN_IT_PASSWORD="dein-passwort"
 ## Nutzung
 
 ```bash
-# Alle pending-Ordner verarbeiten (Dry-Run = nicht absenden)
 npm run apply:dry
-
-# Eine Bewerbung
 npm run apply:one -- data/applications/firma-senior-php
-
-# Wirklich absenden
 npm run apply
-
-# Browser sichtbar (zum Debuggen)
-HEADLESS=false npm run apply:one -- data/applications/firma-senior-php
+npm run inspect -- https://karriere.beispiel.de/jobs/123
 ```
+
+## n8n + Telegram
+
+Siehe [n8n/README.md](n8n/README.md). Kurz:
+
+```
+/bewerben <job-url>
+Firma | Position
+[+ PDF]
+```
+
+→ Ordner anlegen → Bot starten → bei mailto Gmail-Entwurf → Telegram-Status.
+
+## Domain-Profile
+
+Bekannte Hosts in `src/lib/domain-profiles.ts`:
+
+- `karriere.vema-eg.de` → mailto
+- `jobs.personio.de`, `softgarden.io`, `join.com` → Formular-Selektoren (Startpunkt)
+
+Neue Seite: `npm run inspect -- <url>` → Profil ergänzen.
 
 ## Realistische Erwartung
 
-- **php-entwickler Partner-Jobs**: hohe Erfolgsquote (Ein-Klick)
-- **php-entwickler → externe Seite**: braucht oft `formSelectors` pro Domain
-- **get-in-it**: einmaliges Profil-Setup, kein Massen-Bewerben pro Stelle
-
-## Nächste Schritte
-
-1. `data/profile.json` mit deinen echten Daten füllen
-2. Pro Bewerbung einen Ordner unter `data/applications/` anlegen
-3. Mit `--dry-run` testen, Selektoren anpassen
-4. Optional: n8n-Workflow, der Telegram → Ordner anlegt → `npm run apply` startet
+| Szenario | Erfolgsquote |
+|----------|--------------|
+| php-entwickler Partner (Ein-Klick) | hoch |
+| Externe Seite mit Domain-Profil (Formular) | gut |
+| Externe Seite mit mailto (wie VEMA) | gut (via E-Mail-Entwurf) |
+| Unbekannte externe Seite ohne Profil | oft manuell / Selektoren nachziehen |
+| get-in-it | einmaliges Profil-Setup |

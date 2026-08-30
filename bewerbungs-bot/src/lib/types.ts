@@ -70,9 +70,21 @@ export interface ApplicationBundle {
   };
 }
 
+export interface EmailDraft {
+  channel: 'mailto';
+  to: string;
+  subject: string;
+  body: string;
+  attachments: string[];
+  sourceUrl: string;
+  domainProfile?: string;
+}
+
 export interface ApplyResult {
   success: boolean;
   message: string;
   screenshotPath?: string;
   finalUrl?: string;
+  /** Wenn die Karriereseite kein Formular, sondern mailto nutzt */
+  emailDraft?: EmailDraft;
 }

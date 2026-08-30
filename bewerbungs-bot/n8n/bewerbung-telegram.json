@@ -1,0 +1,238 @@
+{
+  "name": "Bewerbung Telegram → Ordner → Bot",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": ["message"],
+        "additionalFields": {}
+      },
+      "id": "telegram-trigger",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [0, 300],
+      "webhookId": "bewerbung-telegram"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Erwartete Nachricht:\n// /bewerben https://www.php-entwickler.de/job/...\n// optional zweite Zeile: Firma | Position\n// Dateien (PDF) als Reply/Attachments an dieselbe Nachricht\n\nconst msg = $input.first().json.message || $input.first().json;\nconst text = (msg.text || msg.caption || '').trim();\nconst chatId = msg.chat?.id;\n\nif (!text.startsWith('/bewerben')) {\n  return [{ json: { skip: true, chatId, reason: 'Kein /bewerben Befehl' } }];\n}\n\nconst lines = text.split('\\n').map(l => l.trim()).filter(Boolean);\nconst first = lines[0].replace('/bewerben', '').trim();\nconst jobUrl = first.match(/https?:\\S+/)?.[0];\nif (!jobUrl) {\n  return [{ json: { skip: true, chatId, reason: 'Keine Job-URL gefunden. Nutzung: /bewerben <url>' } }];\n}\n\nconst metaLine = lines[1] || '';\nconst [company = '', position = ''] = metaLine.split('|').map(s => s.trim());\n\nconst slug = (company || 'job')\n  .toLowerCase()\n  .replace(/[^a-z0-9äöüß]+/gi, '-')\n  .replace(/^-|-$/g, '')\n  .slice(0, 40);\nconst id = `${slug}-${Date.now().toString(36)}`;\n\nconst portal = jobUrl.includes('php-entwickler.de')\n  ? 'php_entwickler'\n  : jobUrl.includes('get-in-it.de')\n    ? 'get_in_it'\n    : 'external';\n\nconst docs = (msg.document ? [msg.document] : []).concat(msg.photo ? [] : []);\n// Mehrere Dokumente kommen oft als separate Updates — hier Single-Doc Support.\n\nreturn [{\n  json: {\n    skip: false,\n    chatId,\n    id,\n    jobUrl,\n    company: company || 'Unbekannt',\n    position: position || 'Stelle',\n    portal,\n    folderRel: `data/applications/${id}`,\n    documentFileId: msg.document?.file_id || null,\n    documentFileName: msg.document?.file_name || 'lebenslauf.pdf'\n  }\n}];"
+      },
+      "id": "parse-command",
+      "name": "Befehl parsen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.skip}}",
+              "value2": false
+            }
+          ]
+        }
+      },
+      "id": "if-not-skip",
+      "name": "Gültiger Befehl?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "chatId": "={{$json.chatId}}",
+        "text": "={{$json.reason || 'Übersprungen'}}",
+        "additionalFields": {}
+      },
+      "id": "telegram-skip",
+      "name": "Telegram Hinweis",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [700, 120]
+    },
+    {
+      "parameters": {
+        "command": "=mkdir -p \"{{$env.BEWERBUNG_BOT_ROOT}}/{{$json.folderRel}}/zeugnisse\" && cat > \"{{$env.BEWERBUNG_BOT_ROOT}}/{{$json.folderRel}}/meta.json\" <<'EOF'\n{\n  \"id\": \"{{$json.id}}\",\n  \"portal\": \"{{$json.portal}}\",\n  \"jobUrl\": \"{{$json.jobUrl}}\",\n  \"company\": \"{{$json.company}}\",\n  \"position\": \"{{$json.position}}\",\n  \"status\": \"pending\",\n  \"files\": {\n    \"cv\": \"lebenslauf.pdf\",\n    \"coverLetter\": \"anschreiben.pdf\"\n  },\n  \"answers\": {\n    \"motivation\": \"\",\n    \"salary\": \"nach Vereinbarung\",\n    \"startDate\": \"ab sofort\"\n  }\n}\nEOF\necho \"Ordner angelegt: {{$json.folderRel}}\""
+      },
+      "id": "create-folder",
+      "name": "Ordner + meta.json anlegen",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [700, 360]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$('Befehl parsen').item.json.documentFileId !== null}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "if-has-doc",
+      "name": "PDF angehängt?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [920, 360]
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "get",
+        "fileId": "={{$('Befehl parsen').item.json.documentFileId}}",
+        "additionalFields": {}
+      },
+      "id": "telegram-download",
+      "name": "PDF von Telegram laden",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1140, 280]
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "={{$env.BEWERBUNG_BOT_ROOT}}/{{$('Befehl parsen').item.json.folderRel}}/lebenslauf.pdf",
+        "dataPropertyName": "data"
+      },
+      "id": "write-pdf",
+      "name": "PDF speichern",
+      "type": "n8n-nodes-base.writeBinaryFile",
+      "typeVersion": 1,
+      "position": [1360, 280]
+    },
+    {
+      "parameters": {
+        "command": "=cd \"{{$env.BEWERBUNG_BOT_ROOT}}\" && npm run apply:one -- \"{{$env.BEWERBUNG_BOT_ROOT}}/{{$('Befehl parsen').item.json.folderRel}}\""
+      },
+      "id": "run-bot",
+      "name": "Playwright Bot starten",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [1580, 360]
+    },
+    {
+      "parameters": {
+        "jsCode": "const fs = require('fs');\nconst path = require('path');\nconst root = $env.BEWERBUNG_BOT_ROOT;\nconst id = $('Befehl parsen').item.json.id;\n\n// Bot verschiebt nach done/ oder failed/\nconst candidates = [\n  path.join(root, 'data/done', id, 'result.json'),\n  path.join(root, 'data/failed', id, 'result.json'),\n  path.join(root, 'data/processing', id, 'result.json'),\n];\n\nlet result = { success: false, message: 'result.json nicht gefunden' };\nfor (const p of candidates) {\n  if (fs.existsSync(p)) {\n    result = JSON.parse(fs.readFileSync(p, 'utf8'));\n    result._path = p;\n    break;\n  }\n}\n\nreturn [{\n  json: {\n    chatId: $('Befehl parsen').item.json.chatId,\n    id,\n    ...result\n  }\n}];"
+      },
+      "id": "read-result",
+      "name": "Ergebnis lesen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1800, 360]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.emailDraft !== undefined && $json.emailDraft !== null}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "if-email-draft",
+      "name": "E-Mail-Entwurf?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [2020, 360]
+    },
+    {
+      "parameters": {
+        "resource": "draft",
+        "operation": "create",
+        "subject": "={{$json.emailDraft.subject}}",
+        "emailType": "text",
+        "message": "={{$json.emailDraft.body}}",
+        "options": {
+          "toRecipients": "={{$json.emailDraft.to}}"
+        }
+      },
+      "id": "gmail-draft",
+      "name": "Gmail Entwurf anlegen",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [2260, 260],
+      "notes": "Anhänge manuell ergänzen oder Binary-Upload-Nodes voranstellen. Gmail OAuth in n8n konfigurieren."
+    },
+    {
+      "parameters": {
+        "chatId": "={{$json.chatId}}",
+        "text": "=✅ Bewerbung {{$json.id}}\n{{$json.message}}\n{{$json.finalUrl || ''}}\n{{$json.emailDraft ? '📧 Entwurf an: ' + $json.emailDraft.to : ''}}\nBitte Entwurf prüfen und absenden.",
+        "additionalFields": {}
+      },
+      "id": "telegram-ok",
+      "name": "Telegram Erfolg",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [2500, 260]
+    },
+    {
+      "parameters": {
+        "chatId": "={{$json.chatId}}",
+        "text": "={{$json.success ? '✅ ' : '❌ '}}{{$json.message}}\n{{$json.finalUrl || ''}}",
+        "additionalFields": {}
+      },
+      "id": "telegram-form-result",
+      "name": "Telegram Formular-Ergebnis",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [2260, 480]
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [[{ "node": "Befehl parsen", "type": "main", "index": 0 }]]
+    },
+    "Befehl parsen": {
+      "main": [[{ "node": "Gültiger Befehl?", "type": "main", "index": 0 }]]
+    },
+    "Gültiger Befehl?": {
+      "main": [
+        [{ "node": "Ordner + meta.json anlegen", "type": "main", "index": 0 }],
+        [{ "node": "Telegram Hinweis", "type": "main", "index": 0 }]
+      ]
+    },
+    "Ordner + meta.json anlegen": {
+      "main": [[{ "node": "PDF angehängt?", "type": "main", "index": 0 }]]
+    },
+    "PDF angehängt?": {
+      "main": [
+        [{ "node": "PDF von Telegram laden", "type": "main", "index": 0 }],
+        [{ "node": "Playwright Bot starten", "type": "main", "index": 0 }]
+      ]
+    },
+    "PDF von Telegram laden": {
+      "main": [[{ "node": "PDF speichern", "type": "main", "index": 0 }]]
+    },
+    "PDF speichern": {
+      "main": [[{ "node": "Playwright Bot starten", "type": "main", "index": 0 }]]
+    },
+    "Playwright Bot starten": {
+      "main": [[{ "node": "Ergebnis lesen", "type": "main", "index": 0 }]]
+    },
+    "Ergebnis lesen": {
+      "main": [[{ "node": "E-Mail-Entwurf?", "type": "main", "index": 0 }]]
+    },
+    "E-Mail-Entwurf?": {
+      "main": [
+        [{ "node": "Gmail Entwurf anlegen", "type": "main", "index": 0 }],
+        [{ "node": "Telegram Formular-Ergebnis", "type": "main", "index": 0 }]
+      ]
+    },
+    "Gmail Entwurf anlegen": {
+      "main": [[{ "node": "Telegram Erfolg", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [{ "name": "bewerbung" }],
+  "pinData": {},
+  "versionId": "1"
+}

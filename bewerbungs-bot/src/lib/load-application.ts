@@ -52,7 +52,12 @@ export async function moveApplication(
 
 export async function saveResult(
   folderPath: string,
-  result: { success: boolean; message: string; finalUrl?: string }
+  result: {
+    success: boolean;
+    message: string;
+    finalUrl?: string;
+    emailDraft?: unknown;
+  }
 ): Promise<void> {
   const resultPath = path.join(folderPath, 'result.json');
   await writeFile(

@@ -1,0 +1,19 @@
+{
+  "id": "vema-senior-backend-php",
+  "portal": "php_entwickler",
+  "jobUrl": "https://www.php-entwickler.de/job/senior-backend-developer-php-heinersreuth-162463",
+  "applyUrl": "https://karriere.vema-eg.de/jobs/senior-backend-developer-php/",
+  "company": "VEMA Versicherungsmakler Genossenschaft eG",
+  "position": "Senior Backend Developer - PHP",
+  "status": "pending",
+  "files": {
+    "cv": "lebenslauf.pdf",
+    "coverLetter": "anschreiben.pdf"
+  },
+  "answers": {
+    "motivation": "Sehr geehrte Frau Pataki,\n\nmit Interesse bewerbe ich mich als Senior Backend Developer (PHP) am Standort Heinersreuth. Über mehrjährige Erfahrung mit PHP, Symfony/Laravel, relationalen Datenbanken und APIs verfüge ich und bringe diese gerne in Ihr Team ein.\n\nMit freundlichen Grüßen",
+    "salary": "nach Vereinbarung",
+    "startDate": "ab sofort"
+  },
+  "notes": "Konkretes Beispiel (Aug 2026): php-entwickler.de → Weiterleitung auf karriere.vema-eg.de. Dort KEIN Formular, sondern mailto:bewerbung@vema-eg.de. Bot erkennt Domain-Profil und erzeugt E-Mail-Entwurf."
+}

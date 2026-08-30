@@ -7,6 +7,7 @@
     "apply": "tsx src/run.ts",
     "apply:one": "tsx src/run.ts --folder",
     "apply:dry": "tsx src/run.ts --dry-run",
+    "inspect": "tsx src/inspect.ts",
     "install:browsers": "playwright install chromium"
   },
   "dependencies": {

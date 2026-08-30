@@ -49,6 +49,10 @@ async function processOne(folderPath: string, dryRun: boolean, headless: boolean
   console.log(result.success ? '✓' : '✗', result.message);
   if (result.finalUrl) console.log('  URL:', result.finalUrl);
   if (result.screenshotPath) console.log('  Screenshot:', result.screenshotPath);
+  if (result.emailDraft) {
+    console.log('  E-Mail-Entwurf →', result.emailDraft.to);
+    console.log('  Betreff:', result.emailDraft.subject);
+  }
 
   if (!dryRun) {
     await saveResult(folderPath, result);
