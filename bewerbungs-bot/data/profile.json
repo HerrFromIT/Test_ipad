@@ -1,0 +1,43 @@
+{
+  "personal": {
+    "firstName": "Max",
+    "lastName": "Mustermann",
+    "email": "max.mustermann@example.com",
+    "phone": "+49 170 1234567",
+    "street": "Musterstraße 1",
+    "zip": "10115",
+    "city": "Berlin",
+    "country": "Deutschland",
+    "linkedin": "https://linkedin.com/in/maxmustermann",
+    "github": "https://github.com/maxmustermann",
+    "website": "https://maxmustermann.dev"
+  },
+  "defaults": {
+    "salary": "nach Vereinbarung",
+    "startDate": "ab sofort",
+    "noticePeriod": "4 Wochen",
+    "workPermit": true,
+    "relocation": false,
+    "remotePreference": "hybrid"
+  },
+  "skills": [
+    "PHP",
+    "Laravel",
+    "Symfony",
+    "JavaScript",
+    "TypeScript",
+    "MySQL",
+    "Docker",
+    "Git"
+  ],
+  "portals": {
+    "php_entwickler": {
+      "email": "max.mustermann@example.com",
+      "passwordEnv": "PHP_ENTWICKLER_PASSWORD"
+    },
+    "get_in_it": {
+      "email": "max.mustermann@example.com",
+      "passwordEnv": "GET_IN_IT_PASSWORD"
+    }
+  }
+}

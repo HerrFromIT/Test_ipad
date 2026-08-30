@@ -1,0 +1,20 @@
+{
+  "id": "beispiel-php-entwickler",
+  "portal": "php_entwickler",
+  "jobUrl": "https://www.php-entwickler.de/jobs/BEISPIEL-JOB-ID",
+  "company": "Beispiel GmbH",
+  "position": "Senior PHP Entwickler (m/w/d)",
+  "status": "pending",
+  "files": {
+    "cv": "lebenslauf.pdf",
+    "coverLetter": "anschreiben.pdf",
+    "certificates": ["zeugnisse/abschluss.pdf"]
+  },
+  "answers": {
+    "motivation": "Sehr geehrte Damen und Herren, mit über 5 Jahren Erfahrung in PHP und Laravel...",
+    "salary": "75.000 EUR brutto/Jahr",
+    "startDate": "01.10.2026",
+    "noticePeriod": "4 Wochen zum Monatsende"
+  },
+  "notes": "Nur Partner-Jobs auf php-entwickler.de können direkt beworben werden. Andere leiten auf die Firmenseite weiter."
+}

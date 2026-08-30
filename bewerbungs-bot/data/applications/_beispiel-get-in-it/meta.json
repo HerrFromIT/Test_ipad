@@ -1,0 +1,18 @@
+{
+  "id": "beispiel-get-in-it",
+  "portal": "get_in_it",
+  "action": "update_profile",
+  "status": "pending",
+  "files": {
+    "cv": "lebenslauf.pdf"
+  },
+  "profile": {
+    "headline": "PHP / Laravel Entwickler",
+    "experienceYears": 5,
+    "desiredRoles": ["Backend Developer", "Full Stack Developer"],
+    "desiredLocations": ["Berlin", "Remote"],
+    "skills": ["PHP", "Laravel", "Symfony", "MySQL", "Docker", "Git"],
+    "degree": "Bachelor Informatik"
+  },
+  "notes": "get-in-it ist kein klassisches Bewerbungsportal. Hier wird ein Profil gepflegt, Firmen melden sich bei dir."
+}
