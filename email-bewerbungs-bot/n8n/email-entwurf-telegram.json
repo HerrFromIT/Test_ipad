@@ -1,0 +1,97 @@
+{
+  "name": "E-Mail Bewerbung: Telegram → Gmail Entwurf",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": ["message"],
+        "additionalFields": {}
+      },
+      "id": "tg-trigger",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [0, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const msg = $input.first().json.message || {};\nconst text = (msg.text || msg.caption || '').trim();\nconst chatId = msg.chat?.id;\n\nif (!text.startsWith('/email')) {\n  return [{ json: { skip: true, chatId, reason: 'Nutze /email — siehe README' } }];\n}\n\nconst body = text.replace(/^\\/email\\s*/i, '');\nconst parts = body.split('---');\nconst header = parts[0] || '';\nconst letter = (parts[1] || '').trim();\n\nconst to = header.match(/^an:\\s*(.+)$/im)?.[1]?.trim();\nconst subject = header.match(/^betreff:\\s*(.+)$/im)?.[1]?.trim() || 'Bewerbung';\n\nif (!to) {\n  return [{ json: { skip: true, chatId, reason: 'Zeile fehlt: an: email@firma.de' } }];\n}\n\nreturn [{\n  json: {\n    skip: false,\n    chatId,\n    to,\n    subject,\n    body: letter || 'Sehr geehrte Damen und Herren,\\n\\nanbei meine Bewerbungsunterlagen.\\n\\nMit freundlichen Grüßen',\n    documentFileId: msg.document?.file_id || null,\n    documentFileName: msg.document?.file_name || 'anhang.pdf'\n  }\n}];"
+      },
+      "id": "parse-email",
+      "name": "E-Mail parsen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [{ "value1": "={{$json.skip}}", "value2": false }]
+        }
+      },
+      "id": "if-valid",
+      "name": "Gültig?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "chatId": "={{$json.chatId}}",
+        "text": "={{$json.reason}}"
+      },
+      "id": "tg-hint",
+      "name": "Telegram Hinweis",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [700, 120]
+    },
+    {
+      "parameters": {
+        "resource": "draft",
+        "operation": "create",
+        "subject": "={{$json.subject}}",
+        "emailType": "text",
+        "message": "={{$json.body}}",
+        "options": {
+          "toRecipients": "={{$json.to}}"
+        }
+      },
+      "id": "gmail-draft",
+      "name": "Gmail Entwurf",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [700, 400],
+      "notes": "PDF-Anhang: optional Telegram-Download + Gmail-Attachment-Node davor schalten"
+    },
+    {
+      "parameters": {
+        "chatId": "={{$json.chatId}}",
+        "text": "=📧 Gmail-Entwurf angelegt\nAn: {{$json.to}}\nBetreff: {{$json.subject}}\n\nBitte in Gmail prüfen, Anhänge ergänzen falls nötig, und absenden."
+      },
+      "id": "tg-ok",
+      "name": "Telegram OK",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [920, 400]
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [[{ "node": "E-Mail parsen", "type": "main", "index": 0 }]]
+    },
+    "E-Mail parsen": {
+      "main": [[{ "node": "Gültig?", "type": "main", "index": 0 }]]
+    },
+    "Gültig?": {
+      "main": [
+        [{ "node": "Gmail Entwurf", "type": "main", "index": 0 }],
+        [{ "node": "Telegram Hinweis", "type": "main", "index": 0 }]
+      ]
+    },
+    "Gmail Entwurf": {
+      "main": [[{ "node": "Telegram OK", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "tags": [{ "name": "bewerbung-email" }]
+}
