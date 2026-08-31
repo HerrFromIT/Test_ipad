@@ -5,7 +5,7 @@ In diesem Repository liegen **zwei getrennte Bots** für unterschiedliche Bewerb
 | Bot | Ordner | Zweck |
 |-----|--------|-------|
 | **E-Mail-Bot** | [`email-bewerbungs-bot/`](email-bewerbungs-bot/) | PDFs + Anschreiben per Telegram → **Gmail-Entwürfe** (klassische E-Mail-Bewerbungen) |
-| **Formular-Bot** | [`bewerbungs-bot/`](bewerbungs-bot/) | Ordner mit Unterlagen → **Webformulare** auf php-entwickler.de / Arbeitgeber-Seiten (Playwright) |
+| **Formular-Bot** | [`bewerbungs-bot/`](bewerbungs-bot/) | Ordner mit Unterlagen → **Webformulare** auf php-entwickler.de / Arbeitgeber-Seiten (Playwright) — **[Konzept & Grenzen](bewerbungs-bot/KONZEPT.md)** |
 
 ## Wann welcher Bot?
 

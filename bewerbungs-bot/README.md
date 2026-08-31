@@ -2,6 +2,9 @@
 
 Ordner-gesteuerter Bewerbungs-Roboter für **php-entwickler.de** und **get-in-it**.
 
+> **Ausführliche Beschreibung:** Was der Bot kann, was nicht, und wie du ihn steuerst —  
+> **[KONZEPT.md](KONZEPT.md)** (zuerst lesen, wenn du entscheiden willst, ob und wie du weitermachst).
+
 ## Wichtig: Deine beiden Portale
 
 | Portal | Was passiert wirklich? | Bot-Aufgabe |
